@@ -32,7 +32,8 @@ class CLIInterface:
     def display(self):
         max_len = len(max(self.dict_values, key=len))  # how to apply this dynamically?
         string_to_print = "\n".join(
-            f"{key:<15} = {value}" for key, value in self.dict_values.items()
+            f"{key:<15} = {value}" if value else ""
+            for key, value in self.dict_values.items()
         )
         self.clear_screen()
         print(string_to_print)
