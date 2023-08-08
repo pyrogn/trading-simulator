@@ -1,47 +1,14 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 from aioconsole import ainput
 from interface import CLIInterface
 from share_prices import SynthSharePrices
 from concurrent.futures import CancelledError
-from collections import defaultdict
-
-
-class Portfolio:
-    def __init__(self, cash=1000):
-        self._cash = cash
-        self.portfolio = defaultdict(int)
-
-    def buy(self, share, cur_price, num_shares=1):
-        tot_sum = num_shares * cur_price
-        self.portfolio[share] += num_shares
-        self.cash -= tot_sum
-
-    def sell(self, share, cur_price, num_shares=1):
-        tot_sum = num_shares * cur_price
-        self.portfolio[share] -= num_shares
-        self.cash += tot_sum
-
-    @property
-    def cash(self):
-        return self._cash
-
-    @cash.setter
-    def cash(self, num):
-        self._cash = num
-
-    @property
-    def portfolio(self):
-        return self._portfolio
-
-    @portfolio.setter
-    def portfolio(self, new_value):
-        self._portfolio = new_value
+from client_info import Person, SharesPortfolio
 
 
 start_cash = 1000
 prices = SynthSharePrices(100)
-portfolio = Portfolio(start_cash)
+portfolio = Person(start_cash)
 current_price = None
 
 
