@@ -1,4 +1,4 @@
-from typing import Iterator
+from typing import Any, Iterator
 import numpy as np
 from datetime import datetime
 from abc import ABC, abstractmethod
@@ -29,15 +29,17 @@ class SynthStockPrice(StockPrice):
         self.generate_values()
 
     def generate_values(self):
-        self.init_value = np.random.randint(200, 1000)
+        self.actual_value = np.random.randint(200, 1000)
         self.new_vals = np.random.default_rng().normal(0, 100, self.n)
-        self.new_vals = self.new_vals[self.new_vals < 0] = 0
 
     def __iter__(self) -> tuple[float, str]:
         for new_val in self.new_vals:
-            self.init_value += new_val
-            self.actual_value = self.init_value  # to use it outside of iteration
-            yield self.init_value
+            self.actual_value += new_val
+            if self.actual_value < 0:
+                self.actual_value = 50  # TODO: change hardcode
+                yield self.actual_value
+            else:
+                yield self.actual_value
 
 
 class RealStockPrice(StockPrice):
@@ -59,11 +61,25 @@ class StockPrices(StockPrice):
 
     def __iter__(self) -> Iterator[dict[str, float], str]:
         "iter by all iterators"
+        for price in self.stock_price[0]:
+            yield {"a": price}  # TODO: fix for several iterators
 
-        yield {price.name: price.actual_price for price in self.stock_price}
+    def get_actual_price(self):
+        return self.stock_price[0].actual_value  # TODO: fix this patch
+
+    # def __getattribute__(self, __name: str = "a") -> Any:
+    #     return self.stock_price
+    # for prices in zip(self.stock_price):  # what if they're unequal?
+    #     # breakpoint()
+    #     yield {price.name: next(price) for price in prices}
+    # yield {prices.name: price for prices in self.stock_price for price in prices}
 
 
 if __name__ == "__main__":
-    g1 = SynthStockPrice(5)
-    for i in g1:
+    s1 = SynthStockPrice(15, "a")
+    s2 = SynthStockPrice(15, "b")
+    # print(list(iter(s1)))
+    stock_prices = StockPrices(s1, s2)
+    print(len(list(iter(stock_prices))))
+    for i in stock_prices:
         print(i)

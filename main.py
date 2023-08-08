@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime
 from aioconsole import ainput
 from interface import CLIInterface
-from share_prices import SynthStockPrice
+from share_prices import SynthStockPrice, StockPrices
 from concurrent.futures import CancelledError
 from client_info import Person, StockPortfolio
 
@@ -10,7 +10,8 @@ REFRESH_RATE = 1  # update price of shares every N seconds
 start_cash = 1000
 length_of_game = 100
 
-prices = SynthStockPrice(length_of_game)
+stock1 = SynthStockPrice(length_of_game)
+prices = StockPrices(stock1)
 portfolio = StockPortfolio(prices)
 person = Person(portfolio, start_cash)
 
@@ -20,10 +21,12 @@ STOCK_NAME = "a"  # hardcode for now, but I don't think we need more than 2 stoc
 async def global_tick():
     for current_price in prices:
         current_price = current_price[STOCK_NAME]
+        if current_price is None:
+            current_price = 999999  # patch. TODO: add format to messages
 
         await asyncio.sleep(REFRESH_RATE)
         cur_time = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
-        cur_total_balance = portfolio.cash + portfolio.portfolio["a"] * current_price
+        cur_total_balance = person.get_full_value()
         perc_tot_cash = cur_total_balance / start_cash
         cli_interface.update_values(
             {
@@ -42,16 +45,17 @@ async def user_action():
         if line == "exit" or line == "e":  # how to make proper cancel?
             raise CancelledError
         elif line == "b":
-            status_buy = person.buy(STOCK_NAME)
-            info_message = "SUCCESS BUY" if status_buy else "FAIL BUY. NOT ENOUGH MONEY"
+            status = person.buy(STOCK_NAME)
+            info_message = "SUCCESS BUY" if status else "FAIL BUY. NOT ENOUGH MONEY"
         elif line == "s":
-            portfolio.sell(STOCK_NAME)
+            status = person.sell(STOCK_NAME)
+            info_message = "SUCCESS SELL" if status else "FAIL SELL. NOT ENOUGH SHARES"
 
         cli_interface.update_values(
             {
                 "cash": f"{person.cash:,.2f}",
                 # "available cash": f"{perc_available_cash:,.2%}",
-                "portfolio": dict(person.portfolio),
+                "portfolio": dict(person.portfolio.shares),
                 "last_command": line,
                 "last_info": info_message,
             }
@@ -75,7 +79,7 @@ cli_interface = CLIInterface(
     "last_info",
 )
 cli_interface.display()
-init_cash_str = f"{portfolio.cash:,}"
+init_cash_str = f"{person.cash:,}"
 cli_interface.update_values(
     {
         "cash": init_cash_str,
