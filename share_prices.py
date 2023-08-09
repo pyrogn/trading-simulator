@@ -1,8 +1,11 @@
 from typing import Any, Iterator
 import numpy as np
+import pandas as pd
+from pathlib import Path
 from datetime import datetime
 from abc import ABC, abstractmethod
 from functools import singledispatchmethod
+import random
 
 # from typing import Iterable, Iterator
 from collections.abc import Iterator, Iterable
@@ -46,6 +49,23 @@ class RealStockPrice(StockPrice):
     """data is from https://www.kaggle.com/datasets/paultimothymooney/stock-market-data
     It has daily data but it gets normalized and iterated with a very short delay so this game is still fun
     """
+
+    def __init__(self, n, name):
+        names = ["AAPL", "AMZN", "NFLX"]
+        self.name = random.choice(names)
+        d = pd.read_csv(Path("data") / f"{self.name}.csv", sep=",", usecols=["Close"])
+        listd = np.array(d["Close"])
+        self.xc = (listd - listd.mean()) / listd.std() * 1000 + 1000
+        self.actual_value = self.xc[0]
+
+    def __iter__(self) -> tuple[str, float]:
+        for new_val in self.xc:
+            self.actual_value += new_val
+            if self.actual_value < 0:
+                self.actual_value = 50  # TODO: change hardcode
+                yield self.name, self.actual_value
+            else:
+                yield self.name, self.actual_value
 
     #
     pass
