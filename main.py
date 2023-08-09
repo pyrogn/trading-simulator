@@ -24,7 +24,6 @@ async def global_tick():
         if current_price is None:
             current_price = 999999  # patch. TODO: add format to messages
 
-        await asyncio.sleep(REFRESH_RATE)
         cur_time = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
         cur_total_balance = person.get_full_value()
         perc_tot_cash = cur_total_balance / start_cash
@@ -35,6 +34,7 @@ async def global_tick():
                 "cur tot bal": f"{cur_total_balance:,.2f} {perc_tot_cash:.2%}",
             }
         )
+        await asyncio.sleep(REFRESH_RATE)
     raise CancelledError
 
 
@@ -42,14 +42,16 @@ async def user_action():
     while True:
         line = await ainput()
         info_message = ""
-        if line == "exit" or line == "e":  # how to make proper cancel?
-            raise CancelledError
+        if line in {"exit", "e", "q", "quit"}:
+            raise CancelledError  # how to make proper cancel?
         elif line == "b":
             status = person.buy(STOCK_NAME)
             info_message = "SUCCESS BUY" if status else "FAIL BUY. NOT ENOUGH MONEY"
         elif line == "s":
             status = person.sell(STOCK_NAME)
             info_message = "SUCCESS SELL" if status else "FAIL SELL. NOT ENOUGH SHARES"
+        else:
+            info_message = "UNKNOWN COMMAND"
 
         cli_interface.update_values(
             {
@@ -77,6 +79,7 @@ cli_interface = CLIInterface(
     "cur tot bal",
     "last_command",
     "last_info",
+    colored_values={"price"},
 )
 cli_interface.display()
 init_cash_str = f"{person.cash:,}"

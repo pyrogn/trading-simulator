@@ -9,7 +9,7 @@ class StockPortfolio:
 
     def get_full_value(self) -> float:
         return sum(
-            self.prices.get_actual_price() * self.shares["a"]
+            self.prices.get_actual_price()[i] * self.shares[i]
             for i in self.shares  # fix for multiple shares
         )
 
@@ -25,7 +25,7 @@ class StockPortfolio:
             del self.shares[key]
 
     def buy(self, available_cash, num_shares=1) -> tuple[float, bool]:
-        tot_sum = num_shares * self.prices.get_actual_price()  # add name of share
+        tot_sum = num_shares * self.prices.get_actual_price()["a"]  # add name of share
         try:
             left_cash = available_cash - tot_sum
 
@@ -37,11 +37,10 @@ class StockPortfolio:
             return available_cash, False
 
     def sell(self, num_shares=1):
-        # ensure to sell only if you have one
-        revenue = num_shares * self.prices.get_actual_price()
+        revenue = num_shares * self.prices.get_actual_price()["a"]
         if self.shares["a"] > 0:
             self.shares["a"] -= num_shares
-            self.clean_zero_stock()
+            self.clean_zero_stock()  # simplify this maybe or subclass defaultdict!!
             return revenue, True
         self.clean_zero_stock()
         return 0, False

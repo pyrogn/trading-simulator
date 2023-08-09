@@ -32,14 +32,14 @@ class SynthStockPrice(StockPrice):
         self.actual_value = np.random.randint(200, 1000)
         self.new_vals = np.random.default_rng().normal(0, 100, self.n)
 
-    def __iter__(self) -> tuple[float, str]:
+    def __iter__(self) -> tuple[str, float]:
         for new_val in self.new_vals:
             self.actual_value += new_val
             if self.actual_value < 0:
                 self.actual_value = 50  # TODO: change hardcode
-                yield self.actual_value
+                yield self.name, self.actual_value
             else:
-                yield self.actual_value
+                yield self.name, self.actual_value
 
 
 class RealStockPrice(StockPrice):
@@ -51,7 +51,7 @@ class RealStockPrice(StockPrice):
     pass
 
 
-class StockPrices(StockPrice):
+class StockPrices:
     """union of all stock prices. it adds timestamp
     It is composition of individual prices
     Think about programmatic way to capture all generated stocks"""
@@ -59,13 +59,12 @@ class StockPrices(StockPrice):
     def __init__(self, *stock_price):
         self.stock_price = stock_price
 
-    def __iter__(self) -> Iterator[dict[str, float], str]:
-        "iter by all iterators"
-        for price in self.stock_price[0]:
-            yield {"a": price}  # TODO: fix for several iterators
+    def __iter__(self):
+        for prices in zip(*self.stock_price):
+            yield {name: price for name, price in prices}
 
     def get_actual_price(self):
-        return self.stock_price[0].actual_value  # TODO: fix this patch
+        return {stock.name: stock.actual_value for stock in self.stock_price}
 
     # def __getattribute__(self, __name: str = "a") -> Any:
     #     return self.stock_price
