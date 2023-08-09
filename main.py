@@ -7,9 +7,9 @@ from concurrent.futures import CancelledError
 from client_info import Person, StockPortfolio
 from bot_logic import BotAction
 
-REFRESH_RATE = 1  # update price of shares every N seconds
-start_cash = 2000
-length_of_game = 100
+REFRESH_RATE = 0.05  # update price of shares every N seconds
+start_cash = 20000
+length_of_game = 10000
 
 stock1 = SynthStockPrice(length_of_game)
 prices = StockPrices(stock1)
@@ -18,9 +18,7 @@ person = Person(portfolio, start_cash)
 
 bot_portfolio = StockPortfolio(prices)
 bot = Person(bot_portfolio, cash=start_cash)
-bot_action = BotAction(
-    bot, bot_portfolio, prices
-)  # prices are required twice. It isn't good
+bot_action = BotAction(bot, bot_portfolio)
 
 STOCK_NAME = "a"  # hardcode for now, but I don't think we need more than 2 stocks
 
@@ -34,8 +32,8 @@ async def global_tick():
         bot_action.make_action()
         cli_interface.update_values(
             {
-                "bot cash": f"{bot.cash:,.2f}",
-                "bot portfolio": dict(bot.portfolio.shares),
+                "bot cash": bot.cash,  # f"{bot.cash:,.2f}",
+                "bot portfolio": bot.portfolio.shares,  # dict(bot.portfolio.shares),
             }
         )
 
@@ -46,10 +44,10 @@ async def global_tick():
         bot_perc_tot_cash = bot_cur_total_balance / start_cash
         cli_interface.update_values(
             {
-                "price": f"{current_price:,.2f}",
+                "price": current_price,  # f"{current_price:,.2f}",
                 "cur_time": cur_time,
-                "cur tot bal": f"{cur_total_balance:,.2f} {perc_tot_cash:.2%}",
-                "bot cur tot bal": f"{bot_cur_total_balance:,.2f} {bot_perc_tot_cash:.2%}",
+                "cur tot bal": cur_total_balance,  # f"{cur_total_balance:,.2f} {perc_tot_cash:.2%}",
+                "bot cur tot bal": bot_cur_total_balance,  # f"{bot_cur_total_balance:,.2f} {bot_perc_tot_cash:.2%}",
             }
         )
         await asyncio.sleep(REFRESH_RATE)
@@ -73,11 +71,11 @@ async def user_action():
 
         cli_interface.update_values(
             {
-                "cash": f"{person.cash:,.2f}",
-                "bot cash": f"{bot.cash:,.2f}",
+                "cash": person.cash,  # f"{person.cash:,.2f}",
+                "bot cash": bot.cash,  # f"{bot.cash:,.2f}",
                 # "available cash": f"{perc_available_cash:,.2%}",
-                "portfolio": dict(person.portfolio.shares),
-                "bot portfolio": dict(bot.portfolio.shares),
+                "portfolio": person.portfolio.shares,  # dict(person.portfolio.shares),
+                "bot portfolio": bot.portfolio.shares,  # dict(bot.portfolio.shares),
                 "last_command": line,
                 "last_info": info_message,
             }
@@ -91,26 +89,30 @@ async def main():
 
 cli_interface = CLIInterface(
     "price",
-    "cur_time",
-    "",
+    "_1",
     "portfolio",
     "cash",
     "cur tot bal",
     "last_command",
-    "last_info",  # TODO: color this also
-    "",  # TODO: why it doesn't work?
+    "last_info",  # to add color?
+    "_2",
     "bot portfolio",
     "bot cash",
     "bot cur tot bal",
+    "_3",
+    "cur_time",
     colored_values={"price"},
+    float_values={"cash", "bot cash", "price", "bot cur tot bal", "cur tot bal"},
+    dict_format_values={"portfolio", "bot portfolio"},
 )
 cli_interface.display()
-init_cash_str = f"{person.cash:,}"
+# init_cash_str = f"{person.cash:,}"
 cli_interface.update_values(
     {
-        "cash": init_cash_str,
-        # "available cash": init_cash_str,
-        "cur tot bal": init_cash_str,
+        "cash": person.cash,
+        "bot cash": bot.cash,
+        "cur tot bal": person.cash,
+        "bot cur tot bal": bot.cash,
     }
 )
 try:
