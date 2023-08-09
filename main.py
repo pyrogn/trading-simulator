@@ -7,7 +7,7 @@ from concurrent.futures import CancelledError
 from client_info import Person, StockPortfolio
 from bot_logic import BotAction
 
-REFRESH_RATE = 0.05  # update price of shares every N seconds
+REFRESH_RATE = 1  # update price of shares every N seconds
 start_cash = 20000
 length_of_game = 10000
 

@@ -31,6 +31,8 @@ class CLIInterface:
         self.percent_values = percent_values or {}
         self.dict_format_values = dict_format_values or {}
 
+        self.previous_colors = {key: "" for key in self.colored_values}
+
     def format_color(self, key, value):
         if key in self.colored_values:
 
@@ -44,14 +46,15 @@ class CLIInterface:
             old_value, new_value = [
                 str_to_float(i) for i in (self.prev_dict_values[key], value)
             ]
-            if (
-                old_value <= new_value
-            ):  # TODO: if value is the same: return same formatting to get rid of flickering
+            if old_value == new_value:
+                color = self.previous_colors[key]
+            elif old_value < new_value:
                 color = Fore.GREEN
             elif old_value > new_value:
                 color = Fore.RED
             else:
                 color = ""
+            self.previous_colors[key] = color
             value = color + str(new_value) + Style.RESET_ALL
         return value
 
