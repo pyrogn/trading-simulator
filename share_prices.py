@@ -14,9 +14,6 @@ class StockPrice(Iterable):
     def __init__(self, n, name):
         pass
 
-    def get_actual_price(share):
-        pass
-
 
 class SynthStockPrice(StockPrice):
     def __init__(self, n, name="a"):

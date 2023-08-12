@@ -2,6 +2,7 @@ from client_info import StockPortfolio, Person
 from collections import deque
 from itertools import islice
 from logger import setup_logger
+import random
 
 logger = setup_logger("bot_actions", "bot_actions.log")
 
@@ -17,11 +18,28 @@ class BotAction:
         self.history_prices = deque()
         self.history_prices_changes = deque()
         self.STOCK_NAME = STOCK_NAME  # bot actions on this stock only
+        self._initial_value = self.person.get_full_value()
 
     def make_action(self):
         self.log_prices()
         self.strategy_mean()
+        self.strategy_do_not_lose()
         # self.strategy_diff()
+        logger.info(
+            f"cur value: {self.person.get_full_value()}, shares: {dict(self.portfolio.shares)}"
+        )
+
+    def strategy_do_not_lose(self):
+        cur_value = self.person.get_full_value()
+        prop_decline = (cur_value - self._initial_value) / self._initial_value
+
+        if prop_decline <= 0:
+            if abs(int(prop_decline * 100)) >= random.randint(1, 8):
+                logger.info(
+                    f"sell all. Cur value: {cur_value}, Initial value: {self._initial_value}"
+                )
+                self.person.sell_all()
+                self._initial_value = self.person.get_full_value()
 
     def strategy_diff(self):
         "not used because it is stupid"
@@ -43,12 +61,20 @@ class BotAction:
             logger.info(f"slice of prices: {slice_for_mean}")
             logger.info(f"slicing mean: {slicing_mean}")
             if len(self.history_prices) >= 5:
-                if self.history_prices[len(self.history_prices) - 1] <= slicing_mean:
+                if (
+                    self.history_prices[len(self.history_prices) - 1]
+                    <= slicing_mean + 100
+                ):
                     action = "buy"
                     self.person.buy(self.STOCK_NAME)
-                else:
+                elif (
+                    self.history_prices[len(self.history_prices) - 1]
+                    >= slicing_mean - 100
+                ):
                     action = "sell"
                     self.person.sell(self.STOCK_NAME)
+                else:
+                    action = "wait"
                 logger.info(f"action: {action}")
 
     def log_prices(self):
