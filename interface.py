@@ -13,7 +13,9 @@ def escape_ansi(line):
     return ansi_escape.sub("", line)
 
 
-class CLIInterface:
+class CLInterface:
+    "Print and update values in Terminal"
+
     def __init__(
         self,
         *keys,
@@ -55,7 +57,9 @@ class CLIInterface:
             else:
                 color = ""
             self.previous_colors[key] = color
-            value = color + str(new_value) + Style.RESET_ALL
+            if key in self.float_values:  # there's could be a more universal logic
+                new_value = self.format_float(key, new_value)
+            value = color + new_value + Style.RESET_ALL
         return value
 
     def format_float(self, key, value):
@@ -77,7 +81,7 @@ class CLIInterface:
         value = self.format_float(key, value)
         value = self.format_percent(key, value)
         value = self.format_dict(key, value)
-        value = self.format_color(key, value)  # if true then str type guaranteed
+        value = self.format_color(key, value)
         return value
 
     @singledispatchmethod
@@ -86,7 +90,7 @@ class CLIInterface:
 
     @update_values.register
     def _(self, key: str, value: str):
-        "update of a single value"
+        "update a single value"
         self.dict_values[key] = value
         self.display()
 
@@ -102,10 +106,11 @@ class CLIInterface:
         os.system(clear)
 
     def display(self):
-        max_len = len(max(self.dict_values, key=len))  # how to apply this dynamically?
+        "Print formatted values in Terminal"
+        max_len = len(max(self.dict_values, key=len))
 
         string_to_print = "\n".join(
-            f"{key:<15} = {self.add_formatting(key, value)}" if value else ""
+            f"{key:<{max_len}} = {self.add_formatting(key, value)}" if value else ""
             for key, value in self.dict_values.items()
         )
         self.prev_dict_values.update(self.dict_values)
@@ -116,9 +121,8 @@ class CLIInterface:
 if __name__ == "__main__":
     from itertools import chain
 
-    cli1 = CLIInterface("val1", "val23232", colored_values={"val1"})
-    # cli1.update_values("val1", "kv2")
-    # cli1.update_values("val23232", "kv232322")
+    cli1 = CLInterface("val1", "val23232", colored_values={"val1"})
+
     for i in chain(range(5), range(5, 0, -1)):
         num = str(i)
         if i % 2 == 0:

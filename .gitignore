@@ -161,3 +161,4 @@ cython_debug/
 
 
 **/*.svg.bkp
+eda.ipynb

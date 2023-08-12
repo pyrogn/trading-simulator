@@ -1,14 +1,13 @@
-from typing import Any, Iterator
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from datetime import datetime
-from abc import ABC, abstractmethod
-from functools import singledispatchmethod
 import random
+from statistics import NormalDist
+from collections.abc import Iterable
+from logger import setup_logger
 
-# from typing import Iterable, Iterator
-from collections.abc import Iterator, Iterable
+TARGET_MEAN = 2000
+logger = setup_logger("prices", "prices.log")
 
 
 class StockPrice(Iterable):
@@ -17,10 +16,6 @@ class StockPrice(Iterable):
 
     def get_actual_price(share):
         pass
-
-    # @abstractmethod
-    # def get_share_prices():
-    #     raise NotImplementedError
 
 
 class SynthStockPrice(StockPrice):
@@ -32,14 +27,20 @@ class SynthStockPrice(StockPrice):
         self.generate_values()
 
     def generate_values(self):
-        self.actual_value = np.random.randint(200, 1000)
+        self.actual_value = np.random.randint(TARGET_MEAN - 300, TARGET_MEAN + 300)
         self.new_vals = np.random.default_rng().normal(0, 100, self.n)
 
     def __iter__(self) -> tuple[str, float]:
         for new_val in self.new_vals:
             self.actual_value += new_val
-            if self.actual_value < 0:
-                self.actual_value = 50  # TODO: change hardcode
+            z = (self.actual_value - TARGET_MEAN) / 1000
+            if (
+                NormalDist().cdf(abs(z)) - 0.5 > random.randint(1, 100) / 100
+            ):  # if score further from target mean, then correct it with random factors
+                self.actual_value -= z * random.randint(1, 100)
+
+            if self.actual_value < 50:
+                self.actual_value = np.random.randint(100, 150)  # TODO: change hardcode
                 yield self.name, self.actual_value
             else:
                 yield self.name, self.actual_value
@@ -57,24 +58,21 @@ class RealStockPrice(StockPrice):
         listd = np.array(d["Close"])
         self.xc = (listd - listd.mean()) / listd.std() * 1000 + 1000
         self.actual_value = self.xc[0]
+        self.name = "a"  # delete it
 
     def __iter__(self) -> tuple[str, float]:
-        for new_val in self.xc:
-            self.actual_value += new_val
+        for self.actual_value in self.xc:
             if self.actual_value < 0:
                 self.actual_value = 50  # TODO: change hardcode
-                yield self.name, self.actual_value
+                yield self.name, self.actual_value  # change to self.name
             else:
                 yield self.name, self.actual_value
 
-    #
-    pass
-
 
 class StockPrices:
-    """union of all stock prices. it adds timestamp
+    """Union of all stock prices
     It is composition of individual prices
-    Think about programmatic way to capture all generated stocks"""
+    Maybe to think about programmatic way to capture all generated stocks"""
 
     def __init__(self, *stock_price):
         self.stock_price = stock_price
@@ -84,14 +82,9 @@ class StockPrices:
             yield {name: price for name, price in prices}
 
     def get_actual_price(self):
-        return {stock.name: stock.actual_value for stock in self.stock_price}
-
-    # def __getattribute__(self, __name: str = "a") -> Any:
-    #     return self.stock_price
-    # for prices in zip(self.stock_price):  # what if they're unequal?
-    #     # breakpoint()
-    #     yield {price.name: next(price) for price in prices}
-    # yield {prices.name: price for prices in self.stock_price for price in prices}
+        prices = {stock.name: stock.actual_value for stock in self.stock_price}
+        logger.info(prices)
+        return prices
 
 
 if __name__ == "__main__":
